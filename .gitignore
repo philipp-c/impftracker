@@ -1,9 +1,6 @@
 # user defined
 config/
-models/
-references/
-reports/
-explore/
+data/results_history
 
 # env-file
 .env
