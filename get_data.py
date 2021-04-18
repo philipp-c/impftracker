@@ -1,7 +1,6 @@
 import pandas as pd 
 from pandas import DataFrame 
 from datetime import datetime, timedelta
-import tqdm
 import numpy as np
 import pygsheets
 import fbprophet
@@ -81,12 +80,14 @@ TYPE_VACCS_HELPER = {"dosen_erst_minus_zweit_kum": "helper_1st",
                      "dosen_reserve_kum": "helper_reserve"}
 
 
-def prep_rki_deliveries(path_rki: str = URL_RKI_DELIVERIES_LATEST):   
+
+def prep_rki_deliveries(path_rki: str = URL_RKI_DELIVERIES_LATEST) -> DataFrame:   
     df_rki = pd.read_csv(path_rki,
                          sep="\t",
                          names=["date", "impfstoff", "region", "amount"], 
                          header=0, 
-                         parse_dates=[0])
+                         parse_dates=[0]
+                         ) 
 
     df_rki["type_vacc"] = df_rki["impfstoff"].map({"comirnaty": NAME_PFIZER, "astra": NAME_ASTRA, " moderna": NAME_MODERNA})
     #df_rki["state_code"] = df_rki["region"].str.split("-", expand=True)[1]
@@ -106,7 +107,10 @@ def prep_rki_deliveries(path_rki: str = URL_RKI_DELIVERIES_LATEST):
     return df_rki_weekly 
 
 
-def prep_rki_vaccs(path: str = URL_RKI_IMPFREIHE_LATEST, cols_impfreihe: list = None, agg_week: bool = True):
+def prep_rki_vaccs(path: str = URL_RKI_IMPFREIHE_LATEST,
+                   cols_impfreihe: list = None,
+                   agg_week: bool = True
+                   ) -> DataFrame:
     df_ir_de = pd.read_csv(path, sep="\t", parse_dates=[0])
     df_ir_de["first_day_of_week"] = df_ir_de['date'].apply(lambda x: (x - timedelta(days=x.dayofweek)))
     if cols_impfreihe is None: 
@@ -127,7 +131,8 @@ def prep_rki_vaccs(path: str = URL_RKI_IMPFREIHE_LATEST, cols_impfreihe: list = 
 
 
 def read_custom_vacc_distribution_time(path: str = PATH_CUSTOM_DISTRIBUTION_QUARTERLY_DELIVERIES,
-                                       sheet_name: str = SHEET_SCENARIO_JJ):
+                                       sheet_name: str = SHEET_SCENARIO_JJ
+                                       )-> DataFrame:
     
     df_distr_vacc_melted =  pd.melt(pd.read_excel(path, sheet_name=sheet_name), 
                                     id_vars=["year", "quarter", "week_of_year", "first_day_of_week"], 
@@ -143,7 +148,7 @@ def read_custom_vacc_distribution_time(path: str = PATH_CUSTOM_DISTRIBUTION_QUAR
 def disaggregate_destatis_weekly(df_destatis: DataFrame, 
                                  path_custom_distr_deliv: str = PATH_CUSTOM_DISTRIBUTION_QUARTERLY_DELIVERIES,
                                  scenario_distribution: str = SHEET_SCENARIO_JJ
-                                 ): 
+                                 )-> DataFrame: 
     weekstarts = (pd.Series(pd.date_range(start="2020-12-21", end="2021-12-31"))
                   .apply(lambda x: (x - timedelta(days=x.dayofweek))).unique())
 
@@ -187,7 +192,7 @@ def disaggregate_destatis_weekly(df_destatis: DataFrame,
     return df_destatis_weekly
 
 
-def prep_destatis(data: list = QUARTERLY_DELIVERIES_STATISTA):   
+def prep_destatis(data: list = QUARTERLY_DELIVERIES_STATISTA) -> DataFrame:   
     df_destatis = pd.concat([pd.DataFrame(q) for q in data], ignore_index=True)
     df_destatis["amount_contract"] = df_destatis["amount"] * 10**6
     df_destatis["amount_usable"] = df_destatis["amount_usable"] * 10**6
@@ -214,7 +219,8 @@ def prep_destatis(data: list = QUARTERLY_DELIVERIES_STATISTA):
 
     
 def combine_datasources_deliveries(df_rki_deliv_weekly: DataFrame = None , 
-                                   df_destatis_weekly: DataFrame = None): 
+                                   df_destatis_weekly: DataFrame = None
+                                   ) -> DataFrame: 
     
     if df_rki_deliv_weekly is None: 
         df_rki_weekly_type_vacc = prep_rki_deliveries()
@@ -257,7 +263,7 @@ def combine_datasources_deliveries(df_rki_deliv_weekly: DataFrame = None ,
     return df_de_weekly_type_vacc
 
 
-def combine_rki_datasources(df_de_weekly_type_vacc): 
+def combine_rki_datasources(df_de_weekly_type_vacc: DataFrame) -> DataFrame: 
     
     df_weekly_deliv_type_vacc = prep_rki_deliveries()
     df_weekly_vac = prep_rki_vaccs().set_index("first_day_of_week")
@@ -277,7 +283,8 @@ def _compute_number_of_vaccinations_by_type(df_de_type_vacc: DataFrame,
                                             type_vacc: str,
                                             scenario: dict,
                                             suffix_scenario: str,
-                                            col_amount_vacc: str ="amount_type_vacc_de_weekly_usable"): 
+                                            col_amount_vacc: str ="amount_type_vacc_de_weekly_usable"
+                                            ) -> DataFrame: 
     
     period = scenario[type_vacc]
     df_de_type_vacc.sort_values(by="first_day_of_week", inplace=True)
@@ -318,7 +325,10 @@ def _compute_number_of_vaccinations_by_type(df_de_type_vacc: DataFrame,
     return df_de_type_vacc
 
 
-def compute_number_of_vaccinations(df_de_weekly: DataFrame, scenario: dict, suffix_scenario: str): 
+def compute_number_of_vaccinations(df_de_weekly: DataFrame, 
+                                   scenario: dict,
+                                   suffix_scenario: str
+                                   ) -> DataFrame: 
 
     list_df_type_vacs = []
     for type_vacc, df_de_type_vacc in df_de_weekly.groupby("type_vacc"): 
@@ -330,7 +340,7 @@ def compute_number_of_vaccinations(df_de_weekly: DataFrame, scenario: dict, suff
     return pd.concat(list_df_type_vacs, ignore_index=True)
 
 
-def predict_vaccinations(prediction_horizon_weeks: int = 4): 
+def predict_vaccinations(prediction_horizon_weeks: int = 4) -> DataFrame: 
     df_rki_daily = prep_rki_vaccs(agg_week=False)
     
     df_1st = (df_rki_daily
@@ -377,8 +387,8 @@ def predict_vaccinations(prediction_horizon_weeks: int = 4):
 def cumsum_vaccinations(df_rki_weekly: DataFrame, 
                         df_vacc_predicted: DataFrame, 
                         last_rki_vacc_update: datetime.date, 
-                        last_rki_deliv_update: datetime.date,
-                        ):
+                        last_rki_deliv_update: datetime.date
+                        )-> DataFrame:
     mask_stop_cumsum = df_rki_weekly["first_day_of_week"] > last_rki_deliv_update    
     
     doses_reserve =(df_rki_weekly["amount_vacc_week_distributed"] 
@@ -401,18 +411,6 @@ def cumsum_vaccinations(df_rki_weekly: DataFrame,
     df_rki_weekly["dosen_reserve_kum"] = - df_rki_weekly["dosen_reserve"].cumsum()
     
     return df_rki_weekly
-
-
-def save_to_googlesheets(df_save: DataFrame): 
-    #authorization
-    google_client = pygsheets.authorize(service_file='archive/data/impf-dashboard-064b3ec57a70.json')
-    sh = google_client.open('impftracker')
-    #select the first sheet 
-    print("clearing")
-    wks = sh[0]
-    wks.clear()
-    print("saving")
-    wks.set_dataframe(df_save.sort_values(by="first_day_of_week"), (1,1))
 
 
 def prep_data_for_tableau(df_de_weekly_type_vacc: DataFrame, 
@@ -471,9 +469,29 @@ def compute_reference_line(df_rki_weekly_vacc: DataFrame,
     return df_de_weekly 
 
 
+def save_to_googlesheets(df_save: DataFrame, 
+                         path_sf: str = "config/impf-dashboard-064b3ec57a70.json", 
+                         fname: str = "impftracker"
+                         ) -> None: 
+    #authorization
+    google_client = pygsheets.authorize(service_file=path_sf)
+    sh = google_client.open(fname)
+    #select the first sheet 
+    wks = sh[0]
+    wks.clear()
+    wks.set_dataframe(df_save.sort_values(by="first_day_of_week"), (1,1))
+
+
+def save_locally(df_save: DataFrame, 
+                 dir_save: str = "data/results_history"
+                 ) -> None: 
+    dt = datetime.datetime.now().strftime(r"%y%m%d_%H%M")
+    fname = f"impftracker_{dt}"
+    df_save.sort_values(by="first_day_of_week").to_excel(dir_save + fname, sheet_name="de_weekly")
+
+
 def main(): 
 
-    
     # combine distributed vaccinations, number of vaccinations, and statista projection into single dataFrame 
     df_de_weekly_type_vacc = combine_datasources_deliveries()
     
@@ -500,8 +518,8 @@ def main():
     df_tableau = prep_data_for_tableau(df_de_weekly_type_vacc=df_de_weekly_type_vacc,
                                        df_rki_weekly_vacc=df_rki_weekly_vacc, 
                                        last_rki_vacc_update=last_rki_deliv_update)
-    #return df_tableau
-    save_to_googlesheets(df_tableau)
+    #save_to_googlesheets(df_tableau)
+    save_locally(df_tableau)    
     return df_tableau
     
 
