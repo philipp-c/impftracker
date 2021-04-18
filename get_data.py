@@ -71,7 +71,7 @@ q4_2021 = {"quarter": 4,  "year": 2021,
 
 QUARTERLY_DELIVERIES_STATISTA = [q4_2020, q1_2021, q2_2021, q3_2021, q4_2021]
 
-PATH_CUSTOM_DISTRIBUTION_QUARTERLY_DELIVERIES = "impftracker/data/custom_time_distribution_vacc.xlsx"
+PATH_CUSTOM_DISTRIBUTION_QUARTERLY_DELIVERIES = "data/custom_time_distribution_vacc.xlsx"
 SHEET_SCENARIO_JJ = "custom_jj"
 
 # helper type of vaccinations necessary for tableau plotting
@@ -483,10 +483,10 @@ def save_to_googlesheets(df_save: DataFrame,
 
 
 def save_locally(df_save: DataFrame, 
-                 dir_save: str = "data/results_history"
+                 dir_save: str = "data/results_history/"
                  ) -> None: 
-    dt = datetime.datetime.now().strftime(r"%y%m%d_%H%M")
-    fname = f"impftracker_{dt}"
+    dt = datetime.now().strftime(r"%y%m%d_%H%M")
+    fname = f"impftracker_{dt}.xlsx"
     df_save.sort_values(by="first_day_of_week").to_excel(dir_save + fname, sheet_name="de_weekly")
 
 
@@ -518,10 +518,10 @@ def main():
     df_tableau = prep_data_for_tableau(df_de_weekly_type_vacc=df_de_weekly_type_vacc,
                                        df_rki_weekly_vacc=df_rki_weekly_vacc, 
                                        last_rki_vacc_update=last_rki_deliv_update)
-    #save_to_googlesheets(df_tableau)
+    save_to_googlesheets(df_tableau)
     save_locally(df_tableau)    
     return df_tableau
     
 
-if __name__ == "main": 
+if __name__ == "__main__": 
     main()
