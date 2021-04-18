@@ -53,13 +53,13 @@ AMOUNT_ASTRA_FOR_SECOND_VACC = 2.6
 
 q2_2021 = {"quarter": 2, "year": 2021,
            "contract_name": [NAME_MODERNA, NAME_CUREVAC, NAME_PFIZER_EXTRA, NAME_JJ, NAME_PFIZER, NAME_ASTRA], 
-           "amount": [6.4, 3.5, 8.7, 10.1, 31.5, 16.9], 
+           "amount": [6.4, 3.5, 8.7 + 9.0, 10.1, 31.5, 12.4], 
            "amount_usable": [6.4-AMOUNT_ASTRA_FOR_SECOND_VACC/5, 
                              3.5-AMOUNT_ASTRA_FOR_SECOND_VACC/5, 
-                             8.7-AMOUNT_ASTRA_FOR_SECOND_VACC/5, 
+                             8.7 + 9.3 - AMOUNT_ASTRA_FOR_SECOND_VACC/5, 
                              10.1-AMOUNT_ASTRA_FOR_SECOND_VACC/5, 
                              31.5 - AMOUNT_ASTRA_FOR_SECOND_VACC/5, 
-                             16.9]}
+                             12.4]}
 q3_2021 = {"quarter": 3, "year": 2021,
            "contract_name": [NAME_MODERNA, NAME_MODERNA_EXTRA, NAME_CUREVAC, NAME_PFIZER_EXTRA, NAME_JJ, NAME_PFIZER, NAME_ASTRA], 
            "amount": [17.6, 9.1, 9.4, 17.1, 22, 17.6, 33.8], 
@@ -459,8 +459,7 @@ def compute_reference_line(df_rki_weekly_vacc: DataFrame,
                                      .truncate(before=date_start)
                                      ["personen_voll_kumulativ"]
                                      .iloc[0])
-    num_people_fully_immune = 52_500_000
-
+    
     n_second_per_day = (num_people_fully_immune - num_people_fully_immune_start)/df_rl.shape[0]
 
     df_rl["amount_2nd_reference_line"] = n_second_per_day
