@@ -1,3 +1,4 @@
+#%%
 import pandas as pd 
 from pandas import DataFrame 
 from datetime import datetime, timedelta
@@ -34,7 +35,9 @@ VACCINATIONS_STRATEGIES = {"scenario_a": {NAME_PFIZER: 6,
                          } 
                         
 # relevant urls RKI   
+MAPPING_NAME_RKI = {"comirnaty": NAME_PFIZER, "astra": NAME_ASTRA, "moderna": NAME_MODERNA}
 URL_RKI_DELIVERIES_LATEST = "https://impfdashboard.de/static/data/germany_deliveries_timeseries_v2.tsv"
+
 URL_RKI_IMPFREIHE_LATEST = "https://impfdashboard.de/static/data/germany_vaccinations_timeseries_v2.tsv"
 
 # destatis data 
@@ -89,21 +92,23 @@ def prep_rki_deliveries(path_rki: str = URL_RKI_DELIVERIES_LATEST) -> DataFrame:
                          parse_dates=[0]
                          ) 
 
-    df_rki["type_vacc"] = df_rki["impfstoff"].map({"comirnaty": NAME_PFIZER, "astra": NAME_ASTRA, " moderna": NAME_MODERNA})
+    if set(df_rki["impfstoff"]) != set(MAPPING_NAME_RKI.keys()): 
+        err_msg = "Some RKI Impfstoff names are not considered. Please change parameter `MAPPING_NAME_RKI`."
+        raise ValueError(err_msg)
+    df_rki["type_vacc"] = df_rki["impfstoff"].map(MAPPING_NAME_RKI)
     #df_rki["state_code"] = df_rki["region"].str.split("-", expand=True)[1]
-    df_rki["year"] = df_rki["date"].dt.year
-    df_rki["week_of_year"] = df_rki["date"].dt.isocalendar().week
-    df_rki["quarter"] = df_rki["date"].dt.quarter
-    df_rki["future"] = False
+
     df_rki["first_day_of_week"] = df_rki['date'].apply(lambda x: (x - timedelta(days=x.dayofweek)))
 
-    df_rki_weekly = (df_rki.groupby(["year", "week_of_year", "type_vacc"], as_index=False)
-                     .agg(**{**{col: (col, "first") for col in df_rki.columns},
-                             **{"amount_type_vacc_de_rki_weekly": ("amount", "sum")}})
-                     .drop(columns=["date", "region"])
+    df_rki_weekly = (df_rki.groupby(["first_day_of_week", "type_vacc"])
+                     .agg(**{"amount_type_vacc_de_rki_weekly": ("amount", "sum")})
+                     .reset_index(drop=False)
                     )
+    df_rki_weekly["year"] = df_rki_weekly["first_day_of_week"].dt.year
+    df_rki_weekly["week_of_year"] = df_rki_weekly["first_day_of_week"].dt.isocalendar().week
+    df_rki_weekly["quarter"] = df_rki_weekly["first_day_of_week"].dt.quarter
+    df_rki_weekly["future"] = False
     df_rki_weekly["source"] = "impfdashboard"
-    df_rki_weekly["percent_of_weekly_amount"] = df_rki_weekly.groupby(["year", "week_of_year"])["amount"].transform(lambda x: x/x.sum())
     return df_rki_weekly 
 
 
@@ -521,7 +526,10 @@ def main():
     save_to_googlesheets(df_tableau)
     save_locally(df_tableau)    
     return df_tableau
-    
+
+
+#%% 
 
 if __name__ == "__main__": 
     main()
+# %%
