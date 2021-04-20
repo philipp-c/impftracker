@@ -55,10 +55,10 @@ AMOUNT_ASTRA_FOR_SECOND_VACC = 2.6
 
 q2_2021 = {"quarter": 2, "year": 2021,
            "contract_name": [NAME_MODERNA, NAME_CUREVAC, NAME_PFIZER_EXTRA, NAME_JJ, NAME_PFIZER, NAME_ASTRA], 
-           "amount": [6.4, 3.5, 8.7 + 9.0, 10.1, 31.5, 12.4], 
-           "amount_usable": [6.4-AMOUNT_ASTRA_FOR_SECOND_VACC/5, 
+           "amount": [6.42, 3.5, 8.7 + 10.10415, 10.1, 31.5, 12.4], 
+           "amount_usable": [6.42-AMOUNT_ASTRA_FOR_SECOND_VACC/5, 
                              3.5-AMOUNT_ASTRA_FOR_SECOND_VACC/5, 
-                             8.7 + 9.3 - AMOUNT_ASTRA_FOR_SECOND_VACC/5, 
+                             8.7 + 10.10415 - AMOUNT_ASTRA_FOR_SECOND_VACC/5, 
                              10.1-AMOUNT_ASTRA_FOR_SECOND_VACC/5, 
                              31.5 - AMOUNT_ASTRA_FOR_SECOND_VACC/5, 
                              12.4]}
@@ -76,7 +76,7 @@ QUARTERLY_DELIVERIES_STATISTA = [q4_2020, q1_2021, q2_2021, q3_2021, q4_2021]
 
 PATH_CUSTOM_DISTRIBUTION_QUARTERLY_DELIVERIES = "data/custom_time_distribution_vacc.xlsx"
 SHEET_SCENARIO_JJ = "custom_jj"
-
+SHEET_BGM_DATA = "bgm_data"
 # helper type of vaccinations necessary for tableau plotting
 TYPE_VACCS_HELPER = {"dosen_erst_minus_zweit_kum": "helper_1st", 
                      "dosen_zweit_kum": "helper_2nd", 
@@ -152,7 +152,7 @@ def read_custom_vacc_distribution_time(path: str = PATH_CUSTOM_DISTRIBUTION_QUAR
 
 def disaggregate_destatis_weekly(df_destatis: DataFrame, 
                                  path_custom_distr_deliv: str = PATH_CUSTOM_DISTRIBUTION_QUARTERLY_DELIVERIES,
-                                 scenario_distribution: str = SHEET_SCENARIO_JJ
+                                 scenario_distribution: str = SHEET_BGM_DATA
                                  )-> DataFrame: 
     weekstarts = (pd.Series(pd.date_range(start="2020-12-21", end="2021-12-31"))
                   .apply(lambda x: (x - timedelta(days=x.dayofweek))).unique())
